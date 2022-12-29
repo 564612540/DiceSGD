@@ -34,8 +34,8 @@ if __name__ == '__main__':
     device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
 
     train_dl, test_dl = generate_Cifar(args.mnbs)
-    # model = timm.create_model('resnet18', pretrained=True, num_classes = 10)
-    model = create_resnet(num_classes=10)
+    model = timm.create_model('resnet18', pretrained=True, num_classes = 10)
+    # model = create_resnet(num_classes=10)
     model = ModuleValidator.fix(model)
     # for p in model.parameters():
     #     print(p.size())

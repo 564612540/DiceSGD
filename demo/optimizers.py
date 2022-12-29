@@ -2,7 +2,7 @@ import torch
 from torch.optim import Optimizer
 from fastDP import PrivacyEngine
 
-PRINT_FREQ = 32
+PRINT_FREQ = 50
 
 def ClipSGD(model, train_dl, test_dl, batch, minibatch, epoch, C, device, lr):
     optimizer_useless=torch.optim.SGD(model.parameters(), lr=lr) 
@@ -53,6 +53,9 @@ def ClipSGD(model, train_dl, test_dl, batch, minibatch, epoch, C, device, lr):
             if t==0 or (t+1)%PRINT_FREQ == 0 or ((t + 1) == len(train_dl)):
                 print('Epoch: ', E, ':', t, 'Train Loss: %.3f | Acc: %.3f%% (%d/%d)'
                         % (train_loss/(t+1), 100.*correct/total, correct, total))
+                # train_loss = 0
+                correct = 0
+                total = 0
         test(E, t, model, test_dl,device)
     return model
 
@@ -121,6 +124,8 @@ def EFSGD(model, train_dl, test_dl, batch, minibatch, epoch, C, device, lr):
             if t==0 or (t+1)%PRINT_FREQ == 0 or ((t + 1) == len(train_dl)):
                 print('Epoch: ', E, ':', t, 'Train Loss: %.3f | Acc: %.3f%% (%d/%d)'
                         % (train_loss/(t+1), 100.*correct/total, correct, total))
+                correct = 0
+                total = 0
         test(E, t, model, test_dl,device)
     return model
 

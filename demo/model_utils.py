@@ -41,14 +41,6 @@ def _weights_init(m):
     if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
         init.kaiming_normal_(m.weight)
 
-class LambdaLayer(nn.Module):
-    def __init__(self, lambd):
-        super(LambdaLayer, self).__init__()
-        self.lambd = lambd
-
-    def forward(self, x):
-        return self.lambd(x)
-
 class BasicBlock(nn.Module):
     expansion = 1
 
@@ -60,15 +52,17 @@ class BasicBlock(nn.Module):
         self.bn2 = nn.GroupNorm(planes,planes,affine=True)
         # self.ln2 = nn.GroupNorm(planes,planes,affine=False)
 
-        self.shortcut = nn.Sequential()
         if stride != 1 or in_planes != planes:
-            self.shortcut = LambdaLayer(lambda x:
-                F.pad(x[:, :, ::2, ::2], (0, 0, 0, 0, planes//4, planes//4), "constant", 0))
+            self.shortcut = True
+            self.planes = planes
+        else:
+            self.shortcut = False
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)))
         out = self.bn2(self.conv2(out))
-        out += self.shortcut(x)
+        if self.shortcut:
+            out += F.pad(x[:, :, ::2, ::2], (0, 0, 0, 0, self.planes//4, self.planes//4), "constant", 0)
         out = F.relu(out)
         return out
 
