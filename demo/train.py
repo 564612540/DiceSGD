@@ -8,19 +8,21 @@ from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 import timm
 from opacus.validators import ModuleValidator
+import warnings
 
 def generate_Cifar(batchsize):
-    trans_cifar = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))])
-    trans_cifar_train = transforms.Compose([transforms.RandomCrop(size=32, padding = 4), transforms.RandomHorizontalFlip(), CIFAR10Policy(), transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))])
-    # trans_cifar = transforms.Compose([transforms.Resize(224),transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))])
-    # trans_cifar_train = transforms.Compose([transforms.Resize(256), transforms.RandomCrop(size=224, padding = 4), transforms.RandomHorizontalFlip(), CIFAR10Policy(), transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))])
+    # trans_cifar = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))])
+    # trans_cifar_train = transforms.Compose([transforms.RandomCrop(size=32, padding = 4), transforms.RandomHorizontalFlip(), CIFAR10Policy(), transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))])
+    trans_cifar = transforms.Compose([transforms.Resize(224),transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))])
+    trans_cifar_train = transforms.Compose([transforms.Resize(256), transforms.RandomCrop(size=224, padding = 4), transforms.RandomHorizontalFlip(), CIFAR10Policy(), transforms.ToTensor(), transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))])
     dataset_train = datasets.CIFAR10('./data/cifar10', train=True, download=True, transform=trans_cifar_train)
     dataset_test = datasets.CIFAR10('./data/cifar10', train=False, download=True, transform=trans_cifar)
     train_loader = DataLoader(dataset_train,batch_size=batchsize,shuffle=True,drop_last=False, pin_memory = True)
-    test_loader = DataLoader(dataset_test,batch_size=batchsize*4,shuffle=True,drop_last=False, pin_memory = False)
+    test_loader = DataLoader(dataset_test,batch_size=batchsize*2,shuffle=False,drop_last=False, pin_memory = False)
     return train_loader, test_loader
 
 if __name__ == '__main__':
+    warnings.filterwarnings("ignore")
     parser = argparse.ArgumentParser(description='PyTorch CIFAR Training')
     parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
     parser.add_argument('--epoch', default=3, type=int,
