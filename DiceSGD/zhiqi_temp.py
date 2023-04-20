@@ -7,12 +7,12 @@ from opacus.accountants.utils import get_noise_multiplier
 PRINT_FREQ = 25
 SPLIT_FACT = 2
 
-def ClipSGD(model, train_dl, test_dl, batch, sample_size, minibatch, epoch, C, device, lr, logger):
+def ClipSGD(model, train_dl, test_dl, batch, minibatch, epoch, C, device, lr, logger):
     optimizer_useless=torch.optim.SGD(model.parameters(), lr=lr) 
     privacy_engine = PrivacyEngine(
         model,
         batch_size=batch,
-        sample_size=sample_size,
+        sample_size=50000,
         epochs=epoch,
         noise_multiplier= 0.,
         max_grad_norm= C,
@@ -67,14 +67,14 @@ def ClipSGD(model, train_dl, test_dl, batch, sample_size, minibatch, epoch, C, d
         test(E, t, model, test_dl, device, lr, logger)
     return model
 
-def EFSGD(model, train_dl, test_dl, batch, sample_size, minibatch, epoch, C, device, lr, logger):
+def EFSGD(model, train_dl, test_dl, batch, minibatch, epoch, C, device, lr, logger):
     C1 = C/SPLIT_FACT
     C2 = C/SPLIT_FACT
     optimizer_useless=torch.optim.SGD(model.parameters(), lr= lr) 
     privacy_engine = PrivacyEngine(
         model,
         batch_size=batch,
-        sample_size=sample_size,
+        sample_size=50000,
         epochs=epoch,
         noise_multiplier= 0.,
         max_grad_norm= C1,
@@ -107,24 +107,11 @@ def EFSGD(model, train_dl, test_dl, batch, sample_size, minibatch, epoch, C, dev
             correct += predicted.eq(label).sum().item()
 
             if ((t + 1) % acc_step == 0) or ((t + 1) == len(train_dl)):
-                # error_norms = []
                 error_norm = 0
                 for param in model.parameters():
                     if param.requires_grad and hasattr(param,'error'): # i.e. not first_minibatch
                         error_norm+=param.error.norm(2)**2
                 error_norm = torch.sqrt(error_norm+1e-4)
-                # for param in model.parameters():
-                #     if param.requires_grad:
-                #         if hasattr(param,'error'):
-                #             first_minibatch = False
-                #             error_norms.append(param.error.norm(2))
-                #         else:
-                #             # param.error = None
-                #             first_minibatch = True
-                #             error_norms.append(torch.tensor(0.))
-                # error_norm = torch.stack(error_norms).norm(2)
-                # if error_norm<1e-6:
-                #     error_norm = 1e-6
                 # print(error_norm)
                 for param in model.parameters():
                     if param.requires_grad:
@@ -136,12 +123,6 @@ def EFSGD(model, train_dl, test_dl, batch, sample_size, minibatch, epoch, C, dev
                             param.error =param.error*(1-torch.clamp_max(C2/error_norm,1.))+grad_diff
                         except:
                             param.error =grad_diff
-                        # if first_minibatch:
-                        #     param.error=grad_diff
-                        # else:
-                        #     param.grad += param.error*torch.clamp_max(C2/error_norm,1.)
-                        #     # param.error=param.error*(1-torch.clamp_max(C2/error_norm,1.))+grad_diff
-                        #     param.error = grad_diff
                         del grad_diff
                 optimizer.step()
                 optimizer.zero_grad()
@@ -154,12 +135,12 @@ def EFSGD(model, train_dl, test_dl, batch, sample_size, minibatch, epoch, C, dev
         test(E, t, model, test_dl,device, lr, logger)
     return model
 
-def DPSGD(model, train_dl, test_dl, batch, sample_size, minibatch, epoch, C, device, lr, logger):
+def DPSGD(model, train_dl, test_dl, batch, minibatch, epoch, C, device, lr, logger):
     optimizer_useless=torch.optim.SGD(model.parameters(), lr=lr) 
     privacy_engine = PrivacyEngine(
         model,
         batch_size=batch,
-        sample_size=sample_size,
+        sample_size=50000,
         epochs=epoch,
         target_epsilon=2,
         max_grad_norm= C,
@@ -170,7 +151,7 @@ def DPSGD(model, train_dl, test_dl, batch, sample_size, minibatch, epoch, C, dev
     sigma = get_noise_multiplier(
         target_delta=1e-5,
         target_epsilon=2,
-        sample_rate=batch/sample_size,
+        sample_rate=batch/50000,
         epochs=epoch
     )
 
@@ -219,14 +200,14 @@ def DPSGD(model, train_dl, test_dl, batch, sample_size, minibatch, epoch, C, dev
         test(E, t, model, test_dl,device,  lr, logger)
     return model
 
-def DiceSGD(model, train_dl, test_dl, batch, sample_size, minibatch, epoch, C, device, lr, logger):
-    C1 = C/SPLIT_FACT
-    C2 = C/SPLIT_FACT
+def DiceSGD(model, train_dl, test_dl, batch, minibatch, epoch, C, device, lr, logger):
+    C1 = C/(SPLIT_FACT*batch)
+    C2 = C/(SPLIT_FACT*batch)
     optimizer_useless=torch.optim.SGD(model.parameters(), lr=lr) 
     privacy_engine = PrivacyEngine(
         model,
         batch_size=batch,
-        sample_size=sample_size,
+        sample_size=50000,
         epochs=epoch,
         target_epsilon=2,
         max_grad_norm= C1,
@@ -238,8 +219,8 @@ def DiceSGD(model, train_dl, test_dl, batch, sample_size, minibatch, epoch, C, d
     sigma = get_noise_multiplier(
         target_delta=1e-5,
         target_epsilon=2,
-        sample_rate=batch/sample_size,
-        epochs=epoch*int(math.log(epoch))**2
+        sample_rate=batch/50000,
+        epochs=epoch
     )
 
     optimizer=torch.optim.Adam(model.parameters(), lr = lr)
@@ -296,7 +277,7 @@ def DiceSGD(model, train_dl, test_dl, batch, sample_size, minibatch, epoch, C, d
                                 std=sigma * C2,
                                 size=param.size(),
                                 device=device,
-                            )/batch
+                            )
                             # param.error=param.error*(1-torch.clamp_max(C2/error_norm,1.))+grad_diff
                             param.error=grad_diff
                         del grad_diff
