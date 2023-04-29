@@ -5,7 +5,7 @@ from fastDP import PrivacyEngine
 from opacus.accountants.utils import get_noise_multiplier
 
 PRINT_FREQ = 25
-SPLIT_FACT = 2
+SPLIT_FACT = 1
 
 def ClipSGD(model, train_dl, test_dl, batch, sample_size, minibatch, epoch, C, device, lr, logger):
     optimizer_useless=torch.optim.SGD(model.parameters(), lr=lr) 
@@ -239,7 +239,7 @@ def DiceSGD(model, train_dl, test_dl, batch, sample_size, minibatch, epoch, C, d
         target_delta=1e-5,
         target_epsilon=2,
         sample_rate=batch/sample_size,
-        epochs=epoch*int(math.log(epoch))**2
+        epochs=epoch*int(math.log(epoch))
     )
 
     optimizer=torch.optim.Adam(model.parameters(), lr = lr)
@@ -297,8 +297,8 @@ def DiceSGD(model, train_dl, test_dl, batch, sample_size, minibatch, epoch, C, d
                                 size=param.size(),
                                 device=device,
                             )/batch
-                            # param.error=param.error*(1-torch.clamp_max(C2/error_norm,1.))+grad_diff
-                            param.error=grad_diff
+                            param.error=param.error*(1-torch.clamp_max(C2/error_norm,1.))+grad_diff
+                            # param.error=grad_diff
                         del grad_diff
                 optimizer.step()
                 optimizer.zero_grad()

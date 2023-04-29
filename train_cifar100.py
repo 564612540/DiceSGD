@@ -53,19 +53,10 @@ if __name__ == '__main__':
     log_file_path = './log/%s_%s_%-.3f.csv'%(args.tag,args.algo,args.C)
     log_file = file_logger(log_file_path, 2, ["test_acc","test_loss"], heading = "E=%d, B=%d, C=%-.4f"%(args.epoch,args.bs,args.C))
 
-    train_dl, test_dl = generate_Cifar(args.mnbs)
+    train_dl, test_dl = generate_Cifar100(args.mnbs)
     sample_size = 50000
-    # model = timm.create_model('vit_small_patch16_224', pretrained=True, num_classes = 10)
-    # model = timm.create_model('resnet18', pretrained=True, num_classes = 10)
-    # model = create_resnet(num_classes=10)
-    # model = ModuleValidator.fix(model)
-    # sd = model.state_dict()
-    # for k,v in sd.items():
-    #     print(k, v.size())
-    # for p in model.parameters():
-    #     print(p.size())
     for lr in args.lr:
-        model = timm.create_model(args.model, pretrained=True, num_classes = 10)
+        model = timm.create_model(args.model, pretrained=True, num_classes = 100)
         model = ModuleValidator.fix(model)
         for l,param in enumerate(model.parameters()):
             if l<2:
