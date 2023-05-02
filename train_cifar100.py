@@ -1,5 +1,5 @@
 import torch
-from DiceSGD.optimizers import ClipSGD, EFSGD, DPSGD, DiceSGD
+from DiceSGD.trainers import ClipSGD, EFSGD, DPSGD, DiceSGD
 from DiceSGD.model_utils import create_resnet, create_cnn
 from DiceSGD.dataset import generate_Cifar, generate_Cifar100
 import argparse
@@ -47,6 +47,7 @@ if __name__ == '__main__':
     parser.add_argument('--algo', default='DiceSGD', type=str, help='algorithm (ClipSGD, EFSGD, DPSGD, DiceSGD)')
     parser.add_argument('--tag', default = '', type=str, help='log file tag')
     parser.add_argument('--model', default = 'vit_small_patch16_224', type=str, help='trained model')
+    parser.add_argument('--method', default = 'sgd', type=str, help='sgd or adam')
 
     args = parser.parse_args()
     device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
@@ -62,12 +63,12 @@ if __name__ == '__main__':
             if l<2:
                 param.requires_grad = False
         if args.algo == 'ClipSGD':
-            ClipSGD(model, train_dl, test_dl, args.bs, sample_size, args.mnbs, args.epoch, args.C, device, lr, log_file)
+            ClipSGD(model, train_dl, test_dl, args.bs, sample_size, args.mnbs, args.epoch, args.C, device, lr, args.method, log_file)
         elif args.algo == 'EFSGD':
-            EFSGD(model, train_dl, test_dl, args.bs, sample_size, args.mnbs, args.epoch, args.C, device, lr, log_file)
+            EFSGD(model, train_dl, test_dl, args.bs, sample_size, args.mnbs, args.epoch, args.C, device, lr, args.method, log_file)
         elif args.algo == 'DPSGD':
-            DPSGD(model, train_dl, test_dl, args.bs, sample_size, args.mnbs, args.epoch, args.C, device, lr, log_file)
+            DPSGD(model, train_dl, test_dl, args.bs, sample_size, args.mnbs, args.epoch, args.C, device, lr, args.method, log_file)
         elif args.algo == 'DiceSGD':
-            DiceSGD(model, train_dl, test_dl, args.bs, sample_size, args.mnbs, args.epoch, args.C, device, lr, log_file)
+            DiceSGD(model, train_dl, test_dl, args.bs, sample_size, args.mnbs, args.epoch, args.C, device, lr, args.method, log_file)
         else:
             raise RuntimeError("Unknown Algorithm!")
