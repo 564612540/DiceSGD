@@ -30,11 +30,10 @@ from transformers.models.gpt2 import GPT2Tokenizer
 from transformers.optimization import get_linear_schedule_with_warmup
 
 from fastDP import PrivacyEngine
-from DiceSGD.optimizers_utils import PrivacyEngine_Dice
-from DiceSGD.compiled_args import (DataTrainingArguments, ModelArguments, PrivacyArguments,
+from .compiled_args import (DataTrainingArguments, ModelArguments, PrivacyArguments,
                             TrainingArguments)
-from DiceSGD.misc import get_all_datasets, get_prompt_dataset
-from DiceSGD.trainer import Trainer
+from .misc import get_all_datasets, get_prompt_dataset
+from .trainer import Trainer
 
 logger = logging.getLogger(__name__)
 
@@ -255,40 +254,22 @@ def main():
     else:
         actual_batch_size = training_args.per_device_train_batch_size * training_args.gradient_accumulation_steps
         origin_params=None if model_args.bias_only or model_args.attention_only else ['wte','wpe']
-        if training_args.algo == 'DiceSGD':
-            privacy_engine = PrivacyEngine_Dice(
-                module=model,
-                batch_size=actual_batch_size,
-                sample_size=len(train_dataset),
-                epochs=training_args.num_train_epochs,
-                max_grad_norm=privacy_args.per_example_max_grad_norm,
-                noise_multiplier=privacy_args.noise_multiplier,
-                target_epsilon=privacy_args.target_epsilon,
-                target_delta=privacy_args.target_delta,
-                accounting_mode=privacy_args.accounting_mode,
-                clipping_mode=privacy_args.clipping_mode,
-                clipping_fn=privacy_args.clipping_fn,
-                clipping_style=privacy_args.clipping_style,
-                origin_params=origin_params,
-            )
-            privacy_engine.attach_dice(optimizer)
-        else:
-            privacy_engine = PrivacyEngine(
-                module=model,
-                batch_size=actual_batch_size,
-                sample_size=len(train_dataset),
-                epochs=training_args.num_train_epochs,
-                max_grad_norm=privacy_args.per_example_max_grad_norm,
-                noise_multiplier=privacy_args.noise_multiplier,
-                target_epsilon=privacy_args.target_epsilon,
-                target_delta=privacy_args.target_delta,
-                accounting_mode=privacy_args.accounting_mode,
-                clipping_mode=privacy_args.clipping_mode,
-                clipping_fn=privacy_args.clipping_fn,
-                clipping_style=privacy_args.clipping_style,
-                origin_params=origin_params,
-            )
-            privacy_engine.attach(optimizer)
+
+        privacy_engine = PrivacyEngine(
+            module=model,
+            batch_size=actual_batch_size,
+            sample_size=len(train_dataset),
+            epochs=training_args.num_train_epochs,
+            max_grad_norm=privacy_args.per_example_max_grad_norm,
+            noise_multiplier=privacy_args.noise_multiplier,
+            target_epsilon=privacy_args.target_epsilon,
+            target_delta=privacy_args.target_delta,
+            accounting_mode=privacy_args.accounting_mode,
+            clipping_mode=privacy_args.clipping_mode,
+            clipping_fn=privacy_args.clipping_fn,
+            clipping_style=privacy_args.clipping_style,
+            origin_params=origin_params,
+        )
 
         # Originally, these could have been null.
         privacy_args.noise_multiplier = privacy_engine.noise_multiplier
@@ -296,7 +277,7 @@ def main():
 
         print('privacy_args: ')
         print(json.dumps(privacy_args.__dict__, indent=4))
-        
+        privacy_engine.attach(optimizer)
 
     # Training.
     if training_args.do_train:
