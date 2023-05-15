@@ -4,17 +4,19 @@ output_dir=${2}
 task_mode=${3}
 model_name_or_path=${4:-"gpt2"} # One of distilgpt2, gpt2, gpt2-medium, gpt2-large
 algo=${5:-"DPSGD"}
-target_epsilon=${6:-8}
-clipping_fn=${7:-"automatic"}
-clipping_mode=${8:-"ghost"}
-clipping_style=${9:-"all-layer"}
-bias_only=${10:-"no"}
-non_private=${11:-"no"}
-physical_batch_size=${12:-20}
-batch_size=${13:-1000}
-attention_only=${14:-"no"}
-static_lm_head=${15:-"no"}
-static_embedding=${16:-"no"}
+C1=${6:-1.0}
+C2=${7:-10.0}
+target_epsilon=${8:-8}
+clipping_fn=${9:-"abadi"}
+clipping_mode=${10:-"ghost"}
+clipping_style=${11:-"all-layer"}
+bias_only=${12:-"no"}
+non_private=${13:-"no"}
+physical_batch_size=${14:-20}
+batch_size=${15:-1000}
+attention_only=${16:-"no"}
+static_lm_head=${17:-"no"}
+static_embedding=${18:-"no"}
 if [[ ${task_mode} == "e2e" ]]; then
   data_dir="${data_dir}/data/e2e_data"
   target_delta=8e-6
@@ -54,10 +56,10 @@ CUDA_VISIBLE_DEVICES=0 python3 -m ./train_glue.py \
   --tokenizer_name ${model_name_or_path} \
   --do_train --do_eval \
   --line_by_line \
-  --save_steps 100 --save_total_limit 1 --save_at_last no \
+  --save_steps -1 --save_total_limit 1 --save_at_last no \
   --logging_dir ${output_dir} --logging_steps -1 \
   --seed 2 \
-  --eval_steps 100 --eval_epochs 2 --max_eval_batches 100 --evaluation_strategy epoch --evaluate_before_training "no" --evaluate_during_training "yes" --per_device_eval_batch_size 10 \
+  --eval_steps 100 --eval_epochs 999 --max_eval_batches 100 --evaluation_strategy epoch --evaluate_before_training "no" --evaluate_during_training "no" --per_device_eval_batch_size 10 \
   --max_generations 9223372036854775807 --max_generations_train 10 --max_generations_valid 9223372036854775807 \
   --max_train_examples 9223372036854775807 --max_valid_examples 9223372036854775807 --max_eval_examples 9223372036854775807 \
   --data_folder ${data_dir} --max_seq_len ${max_seq_len} --format_mode cat \
@@ -66,4 +68,4 @@ CUDA_VISIBLE_DEVICES=0 python3 -m ./train_glue.py \
   --attention_only ${attention_only} --bias_only ${bias_only} --static_lm_head ${static_lm_head} --static_embedding ${static_embedding} \
   --non_private ${non_private} \
   --clipping_mode "${clipping_mode}" --clipping_fn "${clipping_fn}" --clipping_style "${clipping_style}" \
-  --algo ${algo}
+  --algo ${algo} --per_example_max_grad_norm ${C1} --C2 ${C2}

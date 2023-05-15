@@ -11,9 +11,10 @@ from opacus.accountants.utils import get_noise_multiplier
 from fastDP import autograd_grad_sample
 
 class PrivacyEngine_Dice(PrivacyEngine):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, error_max_grad_norm = 1.0, **kwargs):
         super(PrivacyEngine_Dice, self).__init__(*args, **kwargs)
         self.first_minibatch = True
+        self.error_max_grad_norm = error_max_grad_norm
     def attach_dice(self, optimizer):
         autograd_grad_sample.add_hooks(model=self.module, loss_reduction=self.loss_reduction, 
                                        clipping_mode=self.clipping_mode, bias_only=self.bias_only,
@@ -61,21 +62,26 @@ class PrivacyEngine_Dice(PrivacyEngine):
             if not hasattr(param, 'summed_clipped_grad'):
                 unsupported_param_name.append(name)
                 self.named_params.remove((name,param)) # very helpful for models that are not 100% supported, e.g. in timm
+            elif param.grad is None:
+                print(name," this parameter has summed clipped grad but does not have grad")
         if unsupported_param_name!=[]:
             print(unsupported_param_name, 'are not supported by privacy engine; these parameters are not requiring gradient nor updated.')
                 
-        signals, noises, error_norms = [], [], []
+        signals, noises, error_norms, grad_norms = [], [], [], []
 
         for name,param in self.named_params:
             if param.requires_grad:
                 if hasattr(param,'error'):
                     first_minibatch = False
-                    error_norms.append(param.error.norm(2))
+                    error_norms.append(param.error.reshape(-1).norm(2))
                 else:
                     # param.error = None
                     first_minibatch = True
                     error_norms.append(torch.tensor(0.))
+                # grad_norms.append(param.grad.reshape(-1).norm(2))
         error_norm = torch.stack(error_norms).norm(2) + 1e-6
+        # grad_norm = torch.stack(grad_norms).norm(2)
+        # print(error_norm.item(), grad_norm.item())
         
         for name,param in self.named_params:
             grad_diff = (param.grad-param.summed_clipped_grad)
@@ -85,8 +91,8 @@ class PrivacyEngine_Dice(PrivacyEngine):
             if first_minibatch:
                 param.error=grad_diff
             else:
-                param.grad += param.error*torch.clamp_max(self.max_grad_norm/error_norm,1.)
-                param.error=param.error*(1-torch.clamp_max(self.max_grad_norm/error_norm,1.))+grad_diff
+                param.grad += param.error*torch.clamp_max(self.max_grad_norm/error_norm*self.error_max_grad_norm,1)
+                param.error=param.error*torch.clamp_max(self.max_grad_norm/error_norm*self.error_max_grad_norm,(1-torch.clamp_max(self.max_grad_norm/error_norm*self.error_max_grad_norm,1)))+grad_diff
                 # param.error=grad_diff
             del grad_diff
 
@@ -96,7 +102,7 @@ class PrivacyEngine_Dice(PrivacyEngine):
             if self.noise_multiplier > 0 and self.max_grad_norm > 0:
                 noise = torch.normal(
                     mean=0,
-                    std=self.noise_multiplier * self.max_grad_norm * 2,
+                    std=self.noise_multiplier * self.max_grad_norm * math.sqrt(1+2*self.error_max_grad_norm),
                     size=param.size(),
                     device=param.device,
                     dtype=param.dtype,

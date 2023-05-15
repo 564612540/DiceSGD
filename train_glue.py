@@ -1,27 +1,8 @@
-# coding=utf-8
-# Copyright 2018 The Google AI Language Team Authors and The HuggingFace Inc. team.
-# Copyright (c) 2018, NVIDIA CORPORATION.  All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-"""
-Fine-tuning the library models for language modeling on a text file (GPT, GPT-2, CTRL, BERT, RoBERTa, XLNet).
-GPT, GPT-2 and CTRL are fine-tuned using a causal language modeling (CLM) loss. BERT and RoBERTa are fine-tuned
-using a masked language modeling (MLM) loss. XLNet is fine-tuned using a permutation language modeling (PLM) loss.
-"""
-
 import json
 import logging
 import os
+import math
+import gc
 
 import torch
 from ml_swissknife import utils
@@ -260,8 +241,9 @@ def main():
                 module=model,
                 batch_size=actual_batch_size,
                 sample_size=len(train_dataset),
-                epochs=training_args.num_train_epochs,
+                epochs=training_args.num_train_epochs * int(math.log(training_args.num_train_epochs)+1) ,
                 max_grad_norm=privacy_args.per_example_max_grad_norm,
+                error_max_grad_norm=privacy_args.C2,
                 noise_multiplier=privacy_args.noise_multiplier,
                 target_epsilon=privacy_args.target_epsilon,
                 target_delta=privacy_args.target_delta,
@@ -269,7 +251,7 @@ def main():
                 clipping_mode=privacy_args.clipping_mode,
                 clipping_fn=privacy_args.clipping_fn,
                 clipping_style=privacy_args.clipping_style,
-                origin_params=origin_params,
+                origin_params=None #origin_params,
             )
             privacy_engine.attach_dice(optimizer)
         else:

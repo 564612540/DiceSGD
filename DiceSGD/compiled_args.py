@@ -165,6 +165,11 @@ class PrivacyArguments:
             "help": "Clipping 2-norm of per-sample gradients."
         }
     )
+    C2: float = field(
+        default=1.0, metadata={
+            "help": "Clipping 2-norm of feedback error/C1."
+        }
+    )
     noise_multiplier: float = field(
         default=None, metadata={
             "help": "Standard deviation of noise added for privacy; if `target_epsilon` is specified, "

@@ -104,3 +104,12 @@ def create_resnet(num_classes = 10):
 
 def create_cnn(num_classes = 10, size=224):
     return CifarCnn(input_shape=[size], out_dim=num_classes)
+
+
+class LinearReg(nn.Module):
+    def __init__(self):
+        super(LinearReg, self).__init__()
+        self.fc = nn.Linear(100,1)
+    
+    def forward(self, x):
+        return self.fc(x)
