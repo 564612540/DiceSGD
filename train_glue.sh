@@ -49,7 +49,7 @@ fi
 gradient_accumulation_steps=$((${batch_size} / ${physical_batch_size}))
 
 # Arguments in the last two lines are the most important.
-CUDA_VISIBLE_DEVICES=0 python3 -m ./train_glue.py \
+CUDA_VISIBLE_DEVICES=0 python3 ./train_glue.py \
   --output_dir ${output_dir} --overwrite_output_dir \
   --task_mode ${task_mode} \
   --model_name_or_path ${model_name_or_path} \
@@ -63,9 +63,9 @@ CUDA_VISIBLE_DEVICES=0 python3 -m ./train_glue.py \
   --max_generations 9223372036854775807 --max_generations_train 10 --max_generations_valid 9223372036854775807 \
   --max_train_examples 9223372036854775807 --max_valid_examples 9223372036854775807 --max_eval_examples 9223372036854775807 \
   --data_folder ${data_dir} --max_seq_len ${max_seq_len} --format_mode cat \
-  --per_example_max_grad_norm 0.1 --target_delta ${target_delta} --target_epsilon ${target_epsilon} \
+  --per_example_max_grad_norm ${C1} --target_delta ${target_delta} --target_epsilon ${target_epsilon} \
   --learning_rate ${learning_rate} --lr_decay "no" --num_train_epochs ${num_train_epochs} --per_device_train_batch_size ${physical_batch_size} --gradient_accumulation_steps ${gradient_accumulation_steps} \
   --attention_only ${attention_only} --bias_only ${bias_only} --static_lm_head ${static_lm_head} --static_embedding ${static_embedding} \
   --non_private ${non_private} \
   --clipping_mode "${clipping_mode}" --clipping_fn "${clipping_fn}" --clipping_style "${clipping_style}" \
-  --algo ${algo} --per_example_max_grad_norm ${C1} --C2 ${C2}
+  --algo "${algo}" --C2 ${C2}
